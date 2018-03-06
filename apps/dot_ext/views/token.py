@@ -2,6 +2,7 @@
 from rest_framework import viewsets
 from rest_framework import mixins
 from rest_framework import serializers
+from rest_framework.permissions import IsAuthenticated
 from oauth2_provider.models import AccessToken
 from oauth2_provider.ext.rest_framework import OAuth2Authentication
 from ..models import Application
@@ -28,6 +29,7 @@ class AuthorizedTokens(viewsets.GenericViewSet,
                        mixins.DestroyModelMixin):
 
     authentication_classes = [OAuth2Authentication]
+    permission_classes = [IsAuthenticated]
     serializer_class = AccessTokenSerializer
 
     def get_queryset(self):
