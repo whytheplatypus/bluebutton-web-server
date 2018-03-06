@@ -18,7 +18,7 @@ class AccessTokenSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AccessToken
-        fields = '__all__'
+        fields = ('id', 'user', 'application', 'expires', 'scope')
 
 
 # TODO limit with mixins
