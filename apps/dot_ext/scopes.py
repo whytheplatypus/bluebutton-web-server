@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 from oauth2_provider.scopes import BaseScopes
+from oauth2_provider.contrib.rest_framework import permissions
 
 from apps.capabilities.models import ProtectedCapability
 
@@ -31,3 +32,12 @@ class CapabilitiesScopes(BaseScopes):
         """
         # at the moment we assume that the default scopes are all those availables
         return self.get_available_scopes(application, request, *args, **kwargs)
+
+
+class TokenHasRouteScope(permissions.TokenHasScope):
+
+    def get_scopes(self, request, view):
+        # get route from request
+        route = request.path
+        # call the route the scope 
+        return [route]

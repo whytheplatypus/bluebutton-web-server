@@ -4,8 +4,9 @@ from rest_framework import mixins
 from rest_framework import serializers
 from rest_framework.permissions import IsAuthenticated
 from oauth2_provider.models import AccessToken
-from oauth2_provider.ext.rest_framework import OAuth2Authentication
+from oauth2_provider.contrib.rest_framework import OAuth2Authentication
 from ..models import Application
+from ..scopes import TokenHasRouteScope
 
 
 class ApplicationSerializer(serializers.ModelSerializer):
@@ -29,7 +30,7 @@ class AuthorizedTokens(viewsets.GenericViewSet,
                        mixins.DestroyModelMixin):
 
     authentication_classes = [OAuth2Authentication]
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, TokenHasRouteScope]
     serializer_class = AccessTokenSerializer
 
     def get_queryset(self):
