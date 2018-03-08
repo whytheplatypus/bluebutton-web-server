@@ -75,7 +75,6 @@ INSTALLED_APPS = [
     'social_django',
     # DOT must be installed after apps.dot_ext in order to override templates
     'oauth2_provider',
-
 ]
 
 REST_FRAMEWORK = {
@@ -291,7 +290,8 @@ OAUTH2_PROVIDER = {
     'OAUTH2_SERVER_CLASS': 'apps.dot_ext.oauth2_server.Server',
     'SCOPES_BACKEND_CLASS': 'apps.dot_ext.scopes.CapabilitiesScopes',
     'OAUTH2_BACKEND_CLASS': 'apps.dot_ext.oauth2_backends.OAuthLibSMARTonFHIR',
-    'ALLOWED_REDIRECT_URI_SCHEMES': ['https', 'http']
+    'ALLOWED_REDIRECT_URI_SCHEMES': ['https', 'http'],
+    'APPLICATION_MODEL': OAUTH2_PROVIDER_APPLICATION_MODEL,
 }
 
 # These choices will be available in the expires_in field
