@@ -1,8 +1,9 @@
 from __future__ import absolute_import
 from __future__ import unicode_literals
 
+from django.db.models import Q
+
 from oauth2_provider.scopes import BaseScopes
-from oauth2_provider.contrib.rest_framework import permissions
 
 from apps.capabilities.models import ProtectedCapability
 
@@ -23,7 +24,9 @@ class CapabilitiesScopes(BaseScopes):
         Returns a list that contains all the capabilities related
         to the current application.
         """
-        return list(ProtectedCapability.objects.values_list('slug', flat=True))
+        app_scopes = list(
+            ProtectedCapability.objects.filter(Q(default=True) | Q(application=application)).values_list('slug', flat=True))
+        return app_scopes
 
     def get_default_scopes(self, application=None, request=None, *args, **kwargs):
         """
@@ -31,13 +34,4 @@ class CapabilitiesScopes(BaseScopes):
         to the current application.
         """
         # at the moment we assume that the default scopes are all those availables
-        return self.get_available_scopes(application, request, *args, **kwargs)
-
-
-class TokenHasRouteScope(permissions.TokenHasScope):
-
-    def get_scopes(self, request, view):
-        # get route from request
-        route = request.path
-        # call the route the scope 
-        return [route]
+        return list(ProtectedCapability.objects.filter(default=True).values_list('slug', flat=True))
