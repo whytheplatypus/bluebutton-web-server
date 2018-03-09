@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from oauth2_provider.models import AccessToken
 from oauth2_provider.contrib.rest_framework import OAuth2Authentication
 from ..models import Application
-from ..scopes import TokenHasRouteScope
+from ..permissions import TokenHasRouteScope
 
 
 class ApplicationSerializer(serializers.ModelSerializer):
@@ -35,4 +35,3 @@ class AuthorizedTokens(viewsets.GenericViewSet,
 
     def get_queryset(self):
         return AccessToken.objects.select_related("application").filter(user=self.request.user)
-
