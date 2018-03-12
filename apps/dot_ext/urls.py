@@ -10,10 +10,10 @@ oauth2_provider_urls = ([
 ])
 
 router = DefaultRouter()
-router.register(r'tokens', views.AuthorizedTokens, base_name='test')
+router.register(r'tokens', views.AuthorizedTokens, base_name='token')
 
 urlpatterns = [
     url(r'', include(oauth2_provider_urls)),
     url(r'', include('oauth2_provider.urls', namespace='oauth2_provider')),
-    url(r'', include(router.urls, namespace='oauth2_provider'))
+    url(r'', include(router.urls, namespace='token_management'))
 ]

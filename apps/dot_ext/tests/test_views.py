@@ -3,19 +3,22 @@ from __future__ import unicode_literals
 
 import json
 
-from unittest import skip
+from django.utils import timezone
+from datetime import timedelta
 
 from django.core.urlresolvers import reverse
+from django.core.exceptions import ImproperlyConfigured
 
 from oauth2_provider.compat import parse_qs, urlparse
+from oauth2_provider.scopes import get_scopes_backend
+from oauth2_provider.models import AccessToken
 
 from apps.test import BaseApiTest
 from ..models import Application
 
 
 class TestApplicationUpdateView(BaseApiTest):
-    @skip("Skipping until restricted scopes are reenabled. They were disabled for https://issues.hhsdevcloud.us/browse/CBBP-881")
-    def test_update_form_show_allowed_scopes(self):
+    def test_update_form_show(self):
         """
         """
         read_group = self._create_group('read')
@@ -29,9 +32,11 @@ class TestApplicationUpdateView(BaseApiTest):
         app = self._create_application('john_app', user=user)
         # render the edit view for the app
         self.client.login(username=user.username, password='123456')
-        response = self.client.get(reverse('oauth2_provider:update', args=[app.pk]))
-        self.assertContains(response, 'Read-Scope')
-        self.assertNotContains(response, 'Write-Scope')
+        uri = reverse('oauth2_provider:update', args=[app.pk])
+        response = self.client.get(uri)
+        self.assertEqual(response.status_code, 200)
+        # self.assertContains(response, 'Read-Scope')
+        # self.assertNotContains(response, 'Write-Scope')
 
 
 class TestAuthorizationView(BaseApiTest):
@@ -77,3 +82,120 @@ class TestAuthorizationView(BaseApiTest):
         content = json.loads(response.content.decode("utf-8"))
         # and here we test that only the capability-a scope has been issued
         self.assertEqual(content['scope'], "capability-a")
+
+
+class TestTokenView(BaseApiTest):
+    def _create_test_token(self, user, application):
+
+        now = timezone.now()
+        expires = now + timedelta(days=1)
+
+        scope = get_scopes_backend().get_available_scopes(application)
+
+        t = AccessToken.objects.create(user=user, application=application,
+                                       token="sample-token-string",
+                                       expires=expires,
+                                       scope=' '.join(scope))
+        return t
+
+    def test_get_tokens_success(self):
+        anna = self._create_user('anna', '123456')
+        # create a couple of capabilities
+        capability_a = self._create_capability('Capability A', [['GET', '/v1/o/tokens/']], default=False)
+        # create an application and add capabilities
+        application = self._create_application(
+            'an app', grant_type=Application.GRANT_AUTHORIZATION_CODE,
+            redirect_uris='http://example.it')
+        application.scope.add(capability_a)
+        tkn = self._create_test_token(anna, application)
+        response = self.client.get(reverse('token_management:token-list'),
+                                   Authorization="Bearer %s" % (tkn.token))
+        self.assertEqual(response.status_code, 200)
+        result = response.json()
+        expected = [{
+            'id': result[0]['id'],
+            'user': result[0]['user'],
+            'application': {
+                'id': result[0]['application']['id'],
+                'name': 'an app',
+                'logo_uri': '',
+                'tos_uri': '',
+                'policy_uri': '',
+                'contacts': ''
+            },
+            'expires': result[0]['expires'],
+            'scope': 'capability-a'
+        }]
+        self.assertEqual(result, expected)
+
+    def test_delete_token_success(self):
+        anna = self._create_user('anna', '123456')
+        # create a couple of capabilities
+        capability_a = self._create_capability('Capability A', [['DELETE', '/v1/o/tokens/\d+/']], default=False)
+        # create an application and add capabilities
+        application = self._create_application(
+            'an app', grant_type=Application.GRANT_AUTHORIZATION_CODE,
+            redirect_uris='http://example.it')
+        application.scope.add(capability_a)
+        tkn = self._create_test_token(anna, application)
+        response = self.client.delete(reverse('token_management:token-detail', args=[tkn.pk]),
+                                      Authorization="Bearer %s" % (tkn.token))
+        self.assertEqual(response.status_code, 204)
+        failed_response = self.client.delete(reverse('token_management:token-detail', args=[tkn.pk]),
+                                             Authorization="Bearer %s" % (tkn.token))
+        # 401 because the token doesn't exist anymore
+        self.assertEqual(failed_response.status_code, 401)
+
+    def test_create_token_fail(self):
+        anna = self._create_user('anna', '123456')
+        # create a couple of capabilities
+        capability_a = self._create_capability('Capability A', [['POST', '/v1/o/tokens/']], default=False)
+        # create an application and add capabilities
+        application = self._create_application(
+            'an app', grant_type=Application.GRANT_AUTHORIZATION_CODE,
+            redirect_uris='http://example.it')
+        application.scope.add(capability_a)
+        tkn = self._create_test_token(anna, application)
+        response = self.client.post(reverse('token_management:token-list'),
+                                      Authorization="Bearer %s" % (tkn.token))
+        self.assertEqual(response.status_code, 405)
+
+    def test_update_token_fail(self):
+        anna = self._create_user('anna', '123456')
+        # create a couple of capabilities
+        capability_a = self._create_capability('Capability A', [['PUT', '/v1/o/tokens/\d+/']], default=False)
+        # create an application and add capabilities
+        application = self._create_application(
+            'an app', grant_type=Application.GRANT_AUTHORIZATION_CODE,
+            redirect_uris='http://example.it')
+        application.scope.add(capability_a)
+        tkn = self._create_test_token(anna, application)
+        response = self.client.put(reverse('token_management:token-detail', args=[tkn.pk]),
+                                   Authorization="Bearer %s" % (tkn.token))
+        self.assertEqual(response.status_code, 405)
+
+    def test_unauthorized_fail(self):
+        anna = self._create_user('anna', '123456')
+        # create a couple of capabilities
+        self._create_capability('Capability A', [['GET', '/v1/o/tokens/']], default=False)
+        # create an application and add capabilities
+        application = self._create_application(
+            'an app', grant_type=Application.GRANT_AUTHORIZATION_CODE,
+            redirect_uris='http://example.it')
+        tkn = self._create_test_token(anna, application)
+
+        response = self.client.get(reverse('token_management:token-list'),
+                                   Authorization="Bearer %s" % (tkn.token))
+        self.assertEqual(response.status_code, 403)
+
+    def test_misconfigured_fail(self):
+        anna = self._create_user('anna', '123456')
+        # create an application and add capabilities
+        application = self._create_application(
+            'an app', grant_type=Application.GRANT_AUTHORIZATION_CODE,
+            redirect_uris='http://example.it')
+        tkn = self._create_test_token(anna, application)
+
+        with self.assertRaises(ImproperlyConfigured):
+            self.client.get(reverse('token_management:token-list'),
+                            Authorization="Bearer %s" % (tkn.token))
