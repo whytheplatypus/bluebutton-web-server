@@ -37,3 +37,7 @@ django-oauth-toolkit
 
 # Decorate admin urls to force MFA login
 decorate_url
+
+#cryptography
+python-jose
+pycryptodome
