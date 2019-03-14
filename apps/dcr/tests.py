@@ -69,6 +69,3 @@ class TestDynamicClientRegistration(BaseApiTest):
 
     def test_cert_exp_passed(self):
         pass
-
-    def test_revocation_on_x509_chain(self):
-        pass
