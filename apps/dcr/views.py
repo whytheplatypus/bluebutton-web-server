@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework import authentication, permissions, serializers
 from oauth2_provider.models import get_application_model
 from jose import jwt, jwk
+from .models import SoftwareStatement
 from apps.certification.jwt import verify
 
 HEADER_CLAIMS = [
@@ -55,12 +56,15 @@ class Register(APIView):
 
         headers, software_statement = validator.verify_software_statement(software_jwt)
         # TODO: verify exp is small enough
-        # TODO: record the software statement
         app = Application.objects.create(
             name=software_statement['name'],
             redirect_uris=software_statement['redirect_uris'],
             agree=software_statement['agree'],
             user_id=software_statement['user_id'],
+        )
+        SoftwareStatement.objects.create(
+            statement=software_statement,
+            application=app,
         )
         # respond with credentials
         return Response(ApplicationSerializer(app).data)
