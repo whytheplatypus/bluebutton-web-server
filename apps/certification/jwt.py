@@ -1,4 +1,4 @@
-from jose import jwt
+from jose import jwt, jwk
 from .models import CertificationRequest
 
 def verify(token):
@@ -10,4 +10,7 @@ def verify(token):
 
 def get_key(headers):
     req = CertificationRequest.objects.get(pk=headers['kid'])
-    return req.public_key
+    public_key = req.public_key
+    RSAKey = jwk.get_key('RS256')
+    pk_jwk = RSAKey(public_key, 'RS256').to_dict()
+    return pk_jwk

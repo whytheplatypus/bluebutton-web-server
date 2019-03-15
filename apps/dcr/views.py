@@ -56,7 +56,12 @@ class Register(APIView):
         headers, software_statement = validator.verify_software_statement(software_jwt)
         # TODO: verify exp is small enough
         # TODO: record the software statement
-        app = Application.objects.create(**software_statement)
+        app = Application.objects.create(
+            name=software_statement['name'],
+            redirect_uris=software_statement['redirect_uris'],
+            agree=software_statement['agree'],
+            user_id=software_statement['user_id'],
+        )
         # respond with credentials
         return Response(ApplicationSerializer(app).data)
 
@@ -80,7 +85,7 @@ class CertificationValidator(object):
         return False
 
     def verify_software_statement(self, jwt_statement):
-        headers, body = verify(jwt_statement)
+        headers, body = decode(jwt_statement)
         for claim in REQUIRED_CLAIMS:
             if not self.certify_claim(claim, body[claim]):
                 raise Exception("All claims must be certified by all all parties: {}".format(claim))
@@ -89,3 +94,16 @@ class CertificationValidator(object):
             if not self.certify_claim(claim, headers[claim]):
                 raise Exception("All claims must be certified by all all parties: {}".format(claim))
         return headers, body
+
+def decode(token):
+    headers = jwt.get_unverified_header(token)
+    key = get_key(headers)
+    body = jwt.decode(token, key)
+    # extend body with headers for validation
+    return headers, body
+
+def get_key(headers):
+    # jwks_uri = headers['jwks_uri']
+    # keys = headers['jwks']
+    # kid = headers['kid']
+    return headers['jwk']
