@@ -57,6 +57,20 @@ class TestDynamicClientRegistration(BaseApiTest):
         })
 
         self.assertEqual(response.status_code, 200)
+        app = response.json()
+        self.assertTrue('client_id' in app)
+        self.assertTrue('client_secret' in app)
+
+        # Test that posting again simply returns the same app
+        response = self.client.post('/v1/o/register', {
+            'software_statement': software_jwt,
+            'certifications': certification_jwts,
+        })
+
+        self.assertEqual(response.status_code, 200)
+        app_again = response.json()
+        self.assertDictEqual(app, app_again)
+
 
     def test_dev_exp_too_short(self):
         return
@@ -74,6 +88,7 @@ class TestDynamicClientRegistration(BaseApiTest):
             'software_statement': software_jwt,
             'certifications': certification_jwts,
         })
+        self.assertEqual(response.status_code, 400)
         self.assertEqual(response.status_code, 400)
 
     def test_cert_exp_passed(self):

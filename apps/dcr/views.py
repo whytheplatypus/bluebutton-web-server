@@ -56,16 +56,20 @@ class Register(APIView):
 
         headers, software_statement = validator.verify_software_statement(software_jwt)
         # TODO: verify exp is small enough
-        app = Application.objects.create(
-            name=software_statement['name'],
-            redirect_uris=software_statement['redirect_uris'],
-            agree=software_statement['agree'],
-            user_id=software_statement['user_id'],
-        )
-        SoftwareStatement.objects.create(
+        statement_record, created = SoftwareStatement.objects.get_or_create(
             statement=software_statement,
-            application=app,
         )
+        if created:
+            app = Application.objects.create(
+                name=software_statement['name'],
+                redirect_uris=software_statement['redirect_uris'],
+                agree=software_statement['agree'],
+                user_id=software_statement['user_id'],
+            )
+            statement_record.application = app
+            statement_record.save()
+        else:
+            app = statement_record.application
         # respond with credentials
         return Response(ApplicationSerializer(app).data)
 
