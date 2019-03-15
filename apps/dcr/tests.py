@@ -12,6 +12,8 @@ from apps.test import BaseApiTest
 
 from Crypto.PublicKey import RSA
 
+from apps.certification.models import CertificationRequest
+
 
 Application = get_application_model()
 
@@ -19,6 +21,7 @@ Application = get_application_model()
 class TestDynamicClientRegistration(BaseApiTest):
     def test_app_creation(self):
         user = self._create_user('anna', '123456')
+
         key = RSA.generate(2048)
         private_key = key.export_key()
 
@@ -37,16 +40,22 @@ class TestDynamicClientRegistration(BaseApiTest):
             'redirect_uris': 'http://localhost:8000',
             'agree': True,
             'user_id': user.id,
+            'jwk': pk_jwk,
         }
         software_jwt = jwt.encode(software_statement, private_key, algorithm='RS256', headers=headers)
-        software_statement['jwk'] = pk_jwk
+
+        # TODO configure trust framework in settings: TrustFramework.verify(jwt)
+        req = CertificationRequest.objects.create(software_statement=software_statement)
+
         certification_jwts = [
-            jwt.encode(software_statement, private_key, algorithm='RS256', headers=headers)
+            req.sign(),
         ]
+
         response = self.client.post('/v1/o/register', {
             'software_statement': software_jwt,
             'certifications': certification_jwts,
         })
+
         self.assertEqual(response.status_code, 200)
 
     def test_dev_exp_too_short(self):

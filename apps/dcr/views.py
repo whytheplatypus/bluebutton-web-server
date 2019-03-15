@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework import authentication, permissions, serializers
 from oauth2_provider.models import get_application_model
 from jose import jwt, jwk
+from apps.certification.jwt import verify
 
 HEADER_CLAIMS = [
     'jwk',
@@ -68,7 +69,7 @@ class CertificationValidator(object):
 
     def verify_certifications(self):
         for certification in self.certifications:
-            _, statement = decode(certification)
+            _, statement = verify(certification)
             self.certification_statements.append(statement)
 
     def certify_claim(self, claim, value):
@@ -79,7 +80,7 @@ class CertificationValidator(object):
         return False
 
     def verify_software_statement(self, jwt_statement):
-        headers, body = decode(jwt_statement)
+        headers, body = verify(jwt_statement)
         for claim in REQUIRED_CLAIMS:
             if not self.certify_claim(claim, body[claim]):
                 raise Exception("All claims must be certified by all all parties: {}".format(claim))
@@ -88,17 +89,3 @@ class CertificationValidator(object):
             if not self.certify_claim(claim, headers[claim]):
                 raise Exception("All claims must be certified by all all parties: {}".format(claim))
         return headers, body
-
-
-def decode(token):
-    headers = jwt.get_unverified_header(token)
-    key = get_key(headers)
-    body = jwt.decode(token, key)
-    # extend body with headers for validation
-    return headers, body
-
-def get_key(headers):
-    # jwks_uri = headers['jwks_uri']
-    # keys = headers['jwks']
-    # kid = headers['kid']
-    return headers['jwk']
