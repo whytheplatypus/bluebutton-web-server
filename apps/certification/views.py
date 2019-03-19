@@ -1,0 +1,52 @@
+import requests
+from django import forms
+from django.views.generic.base import TemplateView
+from django.views.generic.edit import (
+        FormView,
+)
+from rest_framework import viewsets
+from rest_framework.serializers import (
+    ModelSerializer,
+)
+from .models import CertificationRequest
+
+
+class CertificationRequestSerializer(ModelSerializer):
+
+    class Meta:
+        model = CertificationRequest
+        fields = ('id', 'software_statement', 'created', 'signed', 'token', 'public_key', )
+
+
+class RequestView(viewsets.ModelViewSet):
+    queryset = CertificationRequest.objects.all()
+    serializer_class = CertificationRequestSerializer
+
+
+# class CeritificationsView(TemplateView):
+#     template_name = "certifications.html"
+
+#     def get_context_data(self, **kwargs):
+#         context = super().get_context_data(**kwargs)
+#         context['certifications'] = CertificationRequest.objects.all()
+#         return context
+
+
+class CertificationForm(forms.Form):
+    name = forms.BooleanField(label="I approve this name")
+    tos = forms.BooleanField(label="I approve these terms of service")
+    redirect_uris = forms.BooleanField(label="I approve these redirect uris")
+
+
+class CertificationView(FormView):
+    template_name = "certification.html"
+    form_class = CertificationForm
+    success_url = '/'
+
+    def form_valid(self, form):
+        request = CertificationRequest.objects.get(pk=self.kwargs.get('pk'))
+        request.sign()
+        cred_callback = request.software_statement.get("certification_callback", False)
+        if cred_callback:
+            requests.post(cred_callback, data={"certification": request.token})
+        return super().form_valid(form)

@@ -27,6 +27,8 @@ urlpatterns = [
     url(r'^v1/', include('apps.openapi.urls')),
     url(r'^' + ADMIN_REDIRECTOR + 'admin/metrics/', include('apps.metrics.urls')),
 
+    url(r'^v1/certification/', include('apps.certification.urls')),
+
 
     url(r'^' + ADMIN_REDIRECTOR + 'admin/', admin.site.urls),
 ]

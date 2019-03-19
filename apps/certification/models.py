@@ -9,9 +9,9 @@ class CertificationRequest(models.Model):
     software_statement = JSONField()
     # TODO Encrypt this
     private_key = models.BinaryField(null=True) # keep hidden?
-    token = models.TextField(null=True)
+    token = models.TextField(null=True, editable=False)
     created = models.DateTimeField(auto_now_add=True)
-    signed = models.DateTimeField(null=True)
+    signed = models.DateTimeField(null=True, editable=False)
 
     def sign(self):
         key = RSA.generate(2048)
@@ -33,5 +33,7 @@ class CertificationRequest(models.Model):
 
     @property
     def public_key(self):
-        key = RSA.importKey(bytes(self.private_key))
-        return key.publickey().export_key()
+        if self.private_key:
+            key = RSA.importKey(bytes(self.private_key))
+            return key.publickey().export_key()
+        return None

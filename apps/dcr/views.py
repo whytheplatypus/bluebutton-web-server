@@ -32,6 +32,7 @@ class ApplicationSerializer(serializers.ModelSerializer):
 #     def validate_email(self, value):
 #         return User
 
+# TODO update with post + client_id and client_secret basic auth
 
 class Register(APIView):
     # authentication_classes = (authentication.TokenAuthentication,)
@@ -45,7 +46,7 @@ class Register(APIView):
         # }
         software_jwt  = request.data.get('software_statement')
 
-        certifications = request.data.getlist('certifications')
+        certifications = request.data.get('certifications')
         # parse and check software statement
         # TODO: assert that the exp time has not passed and is short
         # (under some configured number of milliseconds)
@@ -59,12 +60,14 @@ class Register(APIView):
         statement_record, created = SoftwareStatement.objects.get_or_create(
             statement=software_statement,
         )
-        if created:
+        if created or statement_record.application is None:
             app = Application.objects.create(
                 name=software_statement['name'],
                 redirect_uris=software_statement['redirect_uris'],
                 agree=software_statement['agree'],
                 user_id=software_statement['user_id'],
+                authorization_grant_type=software_statement['authorization_grant_type'],
+                client_type=software_statement['client_type'],
             )
             statement_record.application = app
             statement_record.save()
