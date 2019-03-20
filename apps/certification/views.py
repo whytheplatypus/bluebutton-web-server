@@ -4,21 +4,28 @@ from django.views.generic.base import TemplateView
 from django.views.generic.edit import (
         FormView,
 )
-from rest_framework import viewsets
-from rest_framework.serializers import (
-    ModelSerializer,
+from django.contrib.auth.mixins import LoginRequiredMixin
+from rest_framework import (
+    viewsets,
+    serializers,
+    permissions,
+    mixins,
 )
 from .models import CertificationRequest
 
 
-class CertificationRequestSerializer(ModelSerializer):
+class CertificationRequestSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CertificationRequest
         fields = ('id', 'software_statement', 'created', 'signed', 'token', 'public_key', )
 
 
-class RequestView(viewsets.ModelViewSet):
+class RequestView(mixins.CreateModelMixin,
+                  mixins.ListModelMixin,
+                  mixins.RetrieveModelMixin,
+                  viewsets.GenericViewSet):
+
     queryset = CertificationRequest.objects.all()
     serializer_class = CertificationRequestSerializer
 
@@ -38,7 +45,7 @@ class CertificationForm(forms.Form):
     redirect_uris = forms.BooleanField(label="I approve these redirect uris")
 
 
-class CertificationView(FormView):
+class CertificationView(LoginRequiredMixin, FormView):
     template_name = "certification.html"
     form_class = CertificationForm
     success_url = '/'
