@@ -18,7 +18,14 @@ class CertificationRequestSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CertificationRequest
-        fields = ('id', 'software_statement', 'created', 'signed', 'token', 'public_key', )
+        fields = (
+            'id',
+            'software_statement',
+            'created', 'signed',
+            'token',
+            'public_key',
+            'certified_by',
+        )
 
 
 class RequestView(mixins.CreateModelMixin,
@@ -52,7 +59,7 @@ class CertificationView(LoginRequiredMixin, FormView):
 
     def form_valid(self, form):
         request = CertificationRequest.objects.get(pk=self.kwargs.get('pk'))
-        request.sign()
+        request.sign(self.request.user)
         cred_callback = request.software_statement.get("certification_callback", False)
         if cred_callback:
             requests.post(cred_callback, data={"certification": request.token})
