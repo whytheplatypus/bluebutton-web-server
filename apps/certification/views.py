@@ -26,7 +26,11 @@ class CertificationRequestSerializer(serializers.ModelSerializer):
             'public_key',
             'certified_by',
         )
-
+    
+    def create(self, validated_data):
+        instance, _ = CertificationRequest.objects.get_or_create(**validated_data)
+        return instance
+            
 
 class RequestView(mixins.CreateModelMixin,
                   mixins.ListModelMixin,
@@ -55,7 +59,12 @@ class CertificationForm(forms.Form):
 class CertificationView(LoginRequiredMixin, FormView):
     template_name = "certification.html"
     form_class = CertificationForm
-    success_url = '/'
+    success_url = '/v1/certification/requests/'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['certification_request'] = CertificationRequest.objects.get(pk=self.kwargs.get('pk'))
+        return context
 
     def form_valid(self, form):
         request = CertificationRequest.objects.get(pk=self.kwargs.get('pk'))

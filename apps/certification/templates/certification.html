@@ -13,22 +13,39 @@
     <div class="ds-l-row ds-u-justify-content--center ds-u-margin-y--4">
         <div class="ds-l-col--11">
             <form method="post">{% csrf_token %}
-                <p>
-                <label>I approve this name:</label>
-                <input type="checkbox" name="name" required>
-                </p>
-                <p>
-                <label>I approve these terms of service:</label>
-                <input type="checkbox" name="tos" required>
-                </p>
-                <p>
-                <label>I approve these redirect uris:</label>
-                <input type="checkbox" name="redirect_uris" required>
-                </p>
+                <div>
+                    <h3> Name </h3>
+                    <p>
+                    {{ certification_request.software_statement.name }}
+                    </p>
+                    <label>I approve this name:</label>
+                    <input type="checkbox" name="name" required>
+                </div>
+                <div>
+                    <h3> Terms of Service </h3>
+                    <p>
+                    {{ certification_request.software_statement.tos }}
+                    </p>
+                    <label>I approve these terms of service:</label>
+                    <input type="checkbox" name="tos" required>
+                </div>
+                <div>
+                    <h3> Privacy Policy </h3>
+                    <p>
+                    {{ certification_request.software_statement.privacy_policy }}
+                    </p>
+                    <label>I approve this privacy policy:</label>
+                    <input type="checkbox" name="privacy_policy" required>
+                </div>
+                <div>
+                    <h3> Redirect URIs </h3>
+                    <p>
+                    {{ certification_request.software_statement.redirect_uris }}
+                    </p>
+                    <label>I approve these redirect uris:</label>
+                    <input type="checkbox" name="redirect_uris" required>
+                </div>
                 <input type="submit" value="Sign">
-            </form>
-            <form method="post" action="delete">
-                <input type="submit" value="Reject">
             </form>
         </div>
     </div>
